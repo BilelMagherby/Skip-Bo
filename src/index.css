@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+:root {
+  /* Color Palette - Exact from image */
+  --color-yellow: #FFC048;
+  --color-orange: #FF9F43;
+  --color-blue-light: #6DCCDD;
+  --color-blue-dark: #5B5FC7;
+  --color-purple: #5B5FC7;
+  --color-red: #FF3B3F;
+  --color-pink: #FFB3D9;
+  --color-green: #0BE881;
+  --color-text-dark: #2F3542;
+  --color-text-light: #FFFFFF;
+
+  /* Typography */
+  --font-family: 'Nunito', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, #FFF200 0%, #FFF200 50%, #FFB3D9 50%, #FFB3D9 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#root {
+  width: 100%;
+  max-width: 1400px;
+  background: white;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.btn {
+  font-family: var(--font-family);
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  padding: 14px 32px;
+  border-radius: 50px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-red {
+  background-color: var(--color-red);
+  color: var(--color-text-light);
+  box-shadow: 0 4px 15px rgba(255, 59, 63, 0.3);
+}
+
+.btn-yellow {
+  background-color: #FFD93D;
+  color: var(--color-text-dark);
+  box-shadow: 0 4px 15px rgba(255, 217, 61, 0.3);
+}
+
+/* Floating decorative elements */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+.floating-pill {
+  position: absolute;
+  border-radius: 50px;
+  animation: float 4s ease-in-out infinite;
+}

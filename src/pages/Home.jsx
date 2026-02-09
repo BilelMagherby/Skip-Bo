@@ -142,20 +142,18 @@ const Home = () => {
             {/* Hero Section with diagonal split */}
             <section style={{
                 background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 50%, var(--secondary-color) 50%, var(--secondary-color) 100%)',
-                padding: '4rem 3rem',
+                padding: '4rem 1.5rem',
                 position: 'relative',
-                minHeight: '500px',
+                minHeight: '520px',
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'all 0.5s ease'
+                transition: 'all 0.5s ease',
+                overflow: 'hidden'
             }}>
-                <div style={{
-                    maxWidth: '1200px',
-                    margin: '0 auto',
-                    width: '100%',
+                <div className="container hero-grid" style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
-                    gap: '4rem',
+                    gap: '2rem',
                     alignItems: 'center'
                 }}>
 
@@ -164,11 +162,12 @@ const Home = () => {
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
+                            className="hero-title"
                             style={{
-                                fontSize: '4.5rem',
+                                fontSize: '4rem',
                                 fontWeight: '900',
                                 color: 'white',
-                                marginBottom: '1.5rem',
+                                marginBottom: '1rem',
                                 lineHeight: 1.1,
                                 textShadow: '3px 3px 6px rgba(0,0,0,0.1)'
                             }}
@@ -176,11 +175,11 @@ const Home = () => {
                             Skip-Bo
                         </motion.h1>
                         <p style={{
-                            fontSize: '1.3rem',
+                            fontSize: '1.2rem',
                             color: 'white',
                             marginBottom: '2.5rem',
                             lineHeight: 1.5,
-                            maxWidth: '450px',
+                            maxWidth: '500px',
                             opacity: 0.95
                         }}>
                             A Skip-Bo anes white ing where first stite the and hames drodge toil arot hor the game paynot trerest by ivth attip age.
@@ -199,65 +198,46 @@ const Home = () => {
                     </div>
 
                     {/* Right side - Game illustration */}
-                    <div style={{
+                    <div className="hero-illustration" style={{
                         position: 'relative',
                         height: '400px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 2
+                        zIndex: 2,
+                        width: '100%'
                     }}>
                         {/* Emoji characters */}
                         <div style={{
                             position: 'absolute',
-                            top: '10%',
-                            left: '20%',
+                            top: '5%',
+                            left: '15%',
                             display: 'flex',
-                            gap: '10px',
+                            gap: '8px',
                             zIndex: 3
                         }}>
-                            <div style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                background: '#FFD93D',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
-                            }}>😊</div>
-                            <div style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                background: '#FFD93D',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
-                            }}>😄</div>
-                            <div style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                background: '#FFD93D',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
-                            }}>😃</div>
+                            {['😊', '😄', '😃'].map((emoji, idx) => (
+                                <div key={idx} style={{
+                                    width: '45px',
+                                    height: '45px',
+                                    borderRadius: '50%',
+                                    background: '#FFD93D',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.3rem',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+                                }}>{emoji}</div>
+                            ))}
                         </div>
 
                         {/* Playing cards - Dynamic Design */}
                         <div style={{
                             position: 'absolute',
-                            bottom: '15%',
-                            left: '5%',
+                            bottom: '10%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
                             display: 'flex',
-                            gap: '-25px',
                             zIndex: 4
                         }}>
                             {[
@@ -270,11 +250,10 @@ const Home = () => {
                                 return (
                                     <motion.div
                                         key={i}
-                                        initial={{ opacity: 0, scale: 0.8, x: -50 }}
+                                        initial={{ opacity: 0, scale: 0.8 }}
                                         animate={{
                                             opacity: 1,
                                             scale: 1,
-                                            x: 0,
                                             y: [0, -8, 0]
                                         }}
                                         transition={{
@@ -285,11 +264,16 @@ const Home = () => {
                                                 ease: "easeInOut"
                                             }
                                         }}
-                                        style={getHeroCardStyle(i, card)}
+                                        style={{
+                                            ...getHeroCardStyle(i, card),
+                                            width: '90px',
+                                            height: '130px',
+                                            fontSize: '2rem',
+                                            marginLeft: i > 0 ? '-35px' : '0'
+                                        }}
                                     >
-                                        <div style={{ fontSize: cardStyle === 'volcano' ? '2.8rem' : '3.2rem' }}>{cardContent.num}</div>
-                                        <div style={{ fontSize: '1.8rem' }}>{cardContent.suit}</div>
-                                        {/* Molten shine effect */}
+                                        <div style={{ fontSize: cardStyle === 'volcano' ? '2.2rem' : '2.6rem' }}>{cardContent.num}</div>
+                                        <div style={{ fontSize: '1.4rem' }}>{cardContent.suit}</div>
                                         <div style={{
                                             position: 'absolute',
                                             top: 0, left: 0, right: 0, height: '50%',
@@ -304,54 +288,32 @@ const Home = () => {
                         {/* Dice */}
                         <div style={{
                             position: 'absolute',
-                            bottom: '25%',
-                            right: '15%',
+                            bottom: '15%',
+                            right: '5%',
                             display: 'flex',
-                            gap: '10px',
+                            gap: '8px',
                             zIndex: 3
                         }}>
-                            <div style={{
-                                width: '60px',
-                                height: '60px',
-                                background: '#FFB3D9',
-                                borderRadius: '10px',
-                                boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.8rem',
-                                fontWeight: '900',
-                                color: 'white',
-                                transform: 'rotate(-15deg)'
-                            }}>⚄</div>
-                            <div style={{
-                                width: '60px',
-                                height: '60px',
-                                background: '#FFD93D',
-                                borderRadius: '10px',
-                                boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.8rem',
-                                fontWeight: '900',
-                                color: 'white',
-                                transform: 'rotate(10deg)'
-                            }}>⚂</div>
-                            <div style={{
-                                width: '60px',
-                                height: '60px',
-                                background: '#0BE881',
-                                borderRadius: '10px',
-                                boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.8rem',
-                                fontWeight: '900',
-                                color: 'white',
-                                transform: 'rotate(5deg)'
-                            }}>⚃</div>
+                            {[
+                                { color: '#FFB3D9', val: '⚄', rot: -15 },
+                                { color: '#FFD93D', val: '⚂', rot: 10 },
+                                { color: '#0BE881', val: '⚃', rot: 5 }
+                            ].map((die, idx) => (
+                                <div key={idx} style={{
+                                    width: '45px',
+                                    height: '45px',
+                                    background: die.color,
+                                    borderRadius: '8px',
+                                    boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.4rem',
+                                    fontWeight: '900',
+                                    color: 'white',
+                                    transform: `rotate(${die.rot}deg)`
+                                }}>{die.val}</div>
+                            ))}
                         </div>
 
                         {/* Small card top right - Dynamic */}
@@ -361,14 +323,14 @@ const Home = () => {
                             transition={{ delay: 1 }}
                             style={{
                                 position: 'absolute',
-                                top: '12%',
-                                right: '8%',
-                                width: '75px',
-                                height: '105px',
+                                top: '10%',
+                                right: '10%',
+                                width: '60px',
+                                height: '85px',
                                 background: cardStyle === 'volcano' ? 'linear-gradient(45deg, #1a0505, #8b0000)' :
                                     cardStyle === 'treasure' ? '#FFD700' :
                                         cardStyle === 'neon' ? '#000' : '#fff',
-                                borderRadius: cardStyle === 'tropical' ? '15px' : '10px',
+                                borderRadius: cardStyle === 'tropical' ? '12px' : '8px',
                                 boxShadow: '0 10px 25px rgba(0,0,0,0.4)',
                                 border: `2px solid ${cardStyle === 'volcano' ? '#ff4500' :
                                     cardStyle === 'treasure' ? '#FFD700' :
@@ -378,7 +340,7 @@ const Home = () => {
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '2rem',
+                                fontSize: '1.5rem',
                                 fontWeight: '900',
                                 zIndex: 2,
                                 color: cardStyle === 'volcano' || cardStyle === 'treasure' ? '#ffda44' :
@@ -387,22 +349,22 @@ const Home = () => {
                                     cardStyle === 'neon' ? '0 0 5px #00ffff' : 'none'
                             }}>
                             <div>J</div>
-                            <div style={{ fontSize: '1.4rem' }}>{cardStyle === 'volcano' ? '🔥' : '♦'}</div>
+                            <div style={{ fontSize: '1.2rem' }}>{cardStyle === 'volcano' ? '🔥' : '♦'}</div>
                         </motion.div>
 
                         {/* Emoji bottom right */}
                         <div style={{
                             position: 'absolute',
-                            top: '20%',
-                            right: '5%',
-                            width: '55px',
-                            height: '55px',
+                            top: '25%',
+                            right: '3%',
+                            width: '45px',
+                            height: '45px',
                             borderRadius: '50%',
                             background: 'var(--accent-color)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '1.8rem',
+                            fontSize: '1.4rem',
                             boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
                             zIndex: 2,
                             transition: 'all 0.5s ease'
@@ -414,16 +376,14 @@ const Home = () => {
             {/* Bottom Section - Themed */}
             <section style={{
                 background: 'var(--primary-color)',
-                padding: '3rem 3rem',
+                padding: '4rem 1.5rem',
                 color: 'white',
                 transition: 'all 0.5s ease'
             }}>
-                <div style={{
-                    maxWidth: '1200px',
-                    margin: '0 auto',
+                <div className="container" style={{
                     display: 'grid',
-                    gridTemplateColumns: '1.2fr 1fr',
-                    gap: '4rem'
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: '3rem'
                 }}>
 
                     {/* Left - Game Rules */}
@@ -431,7 +391,7 @@ const Home = () => {
                         <h2 style={{
                             fontSize: '2.5rem',
                             fontWeight: '900',
-                            marginBottom: '2rem'
+                            marginBottom: '1.5rem'
                         }}>
                             White owed ith age!
                         </h2>
@@ -445,44 +405,42 @@ const Home = () => {
                                 Game rules
                             </h3>
 
-                            <div style={{ display: 'flex', gap: '3rem' }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                gap: '2rem'
+                            }}>
                                 <div>
                                     <div style={{
                                         display: 'flex',
-                                        gap: '10px',
+                                        gap: '12px',
                                         marginBottom: '1.5rem'
                                     }}>
-                                        <span style={{ fontWeight: '800' }}>•</span>
+                                        <span style={{ fontWeight: '800', color: 'var(--accent-color)' }}>•</span>
                                         <div>
                                             <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Skipbo tios</div>
                                             <div style={{ opacity: 0.9, fontSize: '0.95rem' }}>
-                                                the gowing<br />
-                                                gamets sies.
+                                                the gowing gamets sies.
                                             </div>
                                         </div>
                                     </div>
 
                                     <div style={{
                                         display: 'flex',
-                                        gap: '10px'
+                                        gap: '12px'
                                     }}>
-                                        <span style={{ fontWeight: '800' }}>•</span>
+                                        <span style={{ fontWeight: '800', color: 'var(--accent-color)' }}>•</span>
                                         <div>
                                             <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>True riles</div>
                                             <div style={{ opacity: 0.9, fontSize: '0.95rem' }}>
-                                                Citcer gich the bicather to ur fasiting<br />
-                                                cans.
+                                                Citcer gich the bicather to ur fasiting cans.
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <div style={{ opacity: 0.9, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                                        Vey me rest the skipbo desing sing this<br />
-                                        Skip are Dimoter chate anall can mate<br />
-                                        en tity oecns.
-                                    </div>
+                                <div style={{ opacity: 0.9, fontSize: '0.95rem', lineHeight: 1.6 }}>
+                                    Vey me rest the skipbo desing sing this Skip are Dimoter chate anall can mate en tity oecns.
                                 </div>
                             </div>
                         </div>
@@ -491,23 +449,25 @@ const Home = () => {
                     {/* Right - Join Section */}
                     <div style={{
                         background: 'var(--surface-color)',
-                        borderRadius: '20px',
+                        borderRadius: '24px',
                         padding: '2.5rem',
                         backdropFilter: 'blur(10px)',
-                        transition: 'all 0.5s ease'
+                        transition: 'all 0.5s ease',
+                        border: '1px solid rgba(255,255,255,0.1)'
                     }}>
                         <div style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
+                            width: '70px',
+                            height: '70px',
+                            borderRadius: '18px',
                             background: 'white',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             marginBottom: '1.5rem',
-                            fontSize: '2rem',
+                            fontSize: '1.8rem',
                             fontWeight: '900',
-                            color: 'var(--primary-color)'
+                            color: 'var(--primary-color)',
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
                         }}>
                             SB
                         </div>
@@ -520,10 +480,10 @@ const Home = () => {
                             Joint Thu new Game
                         </h3>
                         <h4 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: '700',
-                            marginBottom: '1rem',
-                            opacity: 0.95
+                            fontSize: '1.3rem',
+                            fontWeight: '600',
+                            marginBottom: '1.5rem',
+                            opacity: 0.8
                         }}>
                             Join You existing our ages
                         </h4>
@@ -531,10 +491,9 @@ const Home = () => {
                         <p style={{
                             opacity: 0.9,
                             lineHeight: 1.6,
-                            fontSize: '0.95rem'
+                            fontSize: '1rem'
                         }}>
-                            Out the rite ther to usecpoptal the<br />
-                            sme daners to tte our bisontis.
+                            Out the rite ther to usecpoptal the sme daners to tte our bisontis.
                         </p>
                     </div>
                 </div>

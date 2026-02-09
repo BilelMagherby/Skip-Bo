@@ -7,13 +7,35 @@ import Tournaments from './pages/Tournaments';
 import About from './pages/About';
 import Settings from './pages/Settings';
 import PlayNow from './pages/PlayNow';
+import CreateRoom from './pages/CreateRoom';
+import JoinRoom from './pages/JoinRoom';
 import Game from './pages/Game';
+
 import Themes from './pages/Themes';
 
+import Footer from './components/Footer';
+
 import { useSelector } from 'react-redux';
+import { useEffect, useRef } from 'react';
 
 const App = () => {
   const currentTheme = useSelector(state => state.theme.websiteTheme);
+  const soundEnabled = useSelector(state => state.theme.soundEnabled);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const playSound = () => {
+      if (soundEnabled && audioRef.current) {
+        audioRef.current.play().catch(e => console.log('Autoplay blocked', e));
+      }
+      window.removeEventListener('click', playSound);
+    };
+
+    window.addEventListener('click', playSound);
+    playSound();
+
+    return () => window.removeEventListener('click', playSound);
+  }, [soundEnabled]);
 
   const themeConfigs = {
     default: {
@@ -22,7 +44,7 @@ const App = () => {
       bg: '#F1F2F6',
       text: '#2F3542',
       accent: '#FFD93D',
-      surface: 'rgba(255, 255, 255, 0.8)',
+      surface: '#5b5fc7',
     },
     dark: {
       primary: '#1E272E',
@@ -68,25 +90,39 @@ const App = () => {
       '--text-color': activeTheme.text,
       '--accent-color': activeTheme.accent,
       '--surface-color': activeTheme.surface,
-      minHeight: '100vh',
-      background: 'var(--bg-color)',
+      minHeight: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'white',
       color: 'var(--text-color)',
       transition: 'all 0.5s ease',
       fontFamily: "'Inter', sans-serif"
     }}>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/how-to-play" element={<HowToPlay />} />
-        <Route path="/tournaments" element={<Tournaments />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/themes" element={<Themes />} />
-        <Route path="/play-now" element={<PlayNow />} />
-        <Route path="/game" element={<Game />} />
-      </Routes>
+      <div style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/themes" element={<Themes />} />
+          <Route path="/play-now" element={<PlayNow />} />
+          <Route path="/create-room" element={<CreateRoom />} />
+          <Route path="/join-room" element={<JoinRoom />} />
+          <Route path="/game" element={<Game />} />
+
+
+        </Routes>
+      </div>
+      <Footer />
+      <audio
+        ref={audioRef}
+        src="https://assets.mixkit.co/active_storage/sfx/1072/1072-preview.mp3"
+      />
     </div>
   );
 };
 
 export default App;
+

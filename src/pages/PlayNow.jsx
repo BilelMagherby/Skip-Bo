@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Play, Clock, Trophy } from 'lucide-react';
+import { Users, Plus, Play, Clock, Trophy, Link as LinkIcon } from 'lucide-react';
+import multiplayerService from '../services/MultiplayerService';
 
 const PlayNow = () => {
     const navigate = useNavigate();
     const [selectedMode, setSelectedMode] = useState(null);
+
+    const handleJoinRoom = () => {
+        const code = prompt("Enter the Room Code from your friend:");
+        if (code) {
+            multiplayerService.init();
+            multiplayerService.connectToPeer(code);
+            navigate('/game');
+        }
+    };
+
 
     const gameModes = [
         {
@@ -18,15 +29,6 @@ const PlayNow = () => {
             color: '#9B59B6'
         },
         {
-            id: 'quick',
-            title: 'Quick Match',
-            description: 'Jump into a game instantly with random players',
-            icon: '⚡',
-            players: '2-4 Players',
-            time: '10-15 min',
-            color: '#FF6B6B'
-        },
-        {
             id: 'create',
             title: 'Create Room',
             description: 'Create a private room and invite your friends',
@@ -36,15 +38,17 @@ const PlayNow = () => {
             color: '#4ECDC4'
         },
         {
-            id: 'tournament',
-            title: 'Join Tournament',
-            description: 'Compete in ranked tournaments for prizes',
-            icon: '🏆',
-            players: '8+ Players',
-            time: '30+ min',
-            color: '#FFD93D'
+            id: 'join',
+            title: 'Join Room',
+            description: 'Join a room using a code from your friend',
+            icon: '🔗',
+            players: 'Guest',
+            time: 'Instant',
+            color: '#FF9F43'
         }
     ];
+
+
 
     const activeRooms = [
         { id: 1, name: "Pro Players Only", host: "CardMaster", players: "3/4", status: "Waiting" },
@@ -299,8 +303,15 @@ const PlayNow = () => {
                                 onClick={() => {
                                     if (selectedMode === 'offline') {
                                         navigate('/game');
+                                    } else if (selectedMode === 'create') {
+                                        navigate('/create-room');
+                                    } else if (selectedMode === 'join') {
+                                        navigate('/join-room');
                                     }
+
                                 }}
+
+
                                 style={{
                                     fontSize: '1.2rem',
                                     padding: '18px 50px'

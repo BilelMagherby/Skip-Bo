@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Plus } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Plus, Share2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addPlayer, startGame, drawCards, playCardToBuildingPile, discardAndEndTurn, executeSingleAiAction } from '../store/gameSlice';
+import multiplayerService from '../services/MultiplayerService';
 
 const Game = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const gameState = useSelector((state) => state.game);
     const theme = useSelector((state) => state.theme);
+    const multiplayer = useSelector((state) => state.multiplayer);
     const [selectedCard, setSelectedCard] = useState(null);
     const [handAnim, setHandAnim] = useState({ show: false, x: 0, y: 0 });
 
@@ -19,27 +21,36 @@ const Game = () => {
     };
 
     useEffect(() => {
-        // Initialize game with player and AI
-        if (gameState.gameStatus === 'lobby' && (gameState.players.length === 0 || !gameState.players)) {
-            dispatch(addPlayer('You'));
-            dispatch(addPlayer('AI Opponent'));
-            setTimeout(() => {
-                dispatch(startGame());
-            }, 100);
+        // Initialize game logic ONLY for local games
+        // If game is already playing (synced from host) OR we are connected to a peer, DO NOT re-initialize!
+        if (gameState.gameStatus === 'playing' || multiplayer.isMultiplayer || multiplayer.connectedPeerId) return;
+
+        if (gameState.gameStatus === 'lobby') {
+            if (gameState.players.length === 0) {
+                // Local AI game - ONLY if not multiplayer
+                dispatch(addPlayer('You'));
+                dispatch(addPlayer('AI Opponent'));
+                setTimeout(() => dispatch(startGame()), 100);
+            }
         }
-    }, [dispatch, gameState.gameStatus, gameState.players]);
+    }, [dispatch, gameState.gameStatus, gameState.players, multiplayer.isMultiplayer, multiplayer.connectedPeerId]);
+
+
+
 
     useEffect(() => {
-        // AI Turn logic: Execute one action at a time with a delay
+        // AI Turn logic: ONLY for local games
+        if (multiplayer.isMultiplayer) return;
+
         let timer;
-        // ONLY run if it is AI turn (index 1)
         if (gameState.gameStatus === 'playing' && gameState.currentPlayerIndex === 1) {
             timer = setTimeout(() => {
                 dispatch(executeSingleAiAction());
-            }, 3000); // 3s delay for deliberate moves
+            }, 3000);
         }
         return () => clearTimeout(timer);
-    }, [gameState.currentPlayerIndex, gameState.gameStatus, gameState.aiStatus, gameState.players, gameState.buildingPiles, dispatch]);
+    }, [gameState.currentPlayerIndex, gameState.gameStatus, gameState.aiStatus, multiplayer.isMultiplayer]);
+
 
     useEffect(() => {
         // Hand refill logic: Draw 5 more only IF hand is empty
@@ -54,13 +65,20 @@ const Game = () => {
     }, [gameState.currentPlayerIndex, gameState.gameStatus, gameState.players, dispatch]);
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const isPlayerTurn = gameState.currentPlayerIndex === 0;
 
-    const canPlayStockpile = isPlayerTurn && gameState.players[0]?.stockpileTop && gameState.buildingPiles.some(pile => {
+    // In multiplayer: Host is index 0, Guest is index 1
+    const isLocalPlayerTurn = multiplayer.isMultiplayer
+        ? (multiplayer.isHost ? gameState.currentPlayerIndex === 0 : gameState.currentPlayerIndex === 1)
+        : gameState.currentPlayerIndex === 0;
+
+    const isPlayerTurn = isLocalPlayerTurn;
+
+    const canPlayStockpile = isPlayerTurn && gameState.players[gameState.currentPlayerIndex]?.stockpileTop && gameState.buildingPiles.some(pile => {
         const expectedValue = pile.length + 1;
-        const topStockCard = gameState.players[0].stockpileTop;
+        const topStockCard = gameState.players[gameState.currentPlayerIndex].stockpileTop;
         return topStockCard.type === 'skipbo' || topStockCard.value === expectedValue;
     });
+
 
     const handleCardClick = (card, source) => {
         if (!isPlayerTurn) return;
@@ -77,11 +95,18 @@ const Game = () => {
             triggerHandAnim(rect.left, rect.top);
         }
 
-        dispatch(playCardToBuildingPile({
+        const movePayload = {
             cardId: selectedCard.card.id,
             pileIndex,
             source: selectedCard.source
-        }));
+        };
+
+        dispatch(playCardToBuildingPile(movePayload));
+
+        if (multiplayer.isMultiplayer) {
+            multiplayerService.sendData({ type: 'PLAY_CARD', payload: movePayload });
+        }
+
         setSelectedCard(null);
     };
 
@@ -95,12 +120,20 @@ const Game = () => {
             triggerHandAnim(rect.left, rect.top);
         }
 
-        dispatch(discardAndEndTurn({
+        const discardPayload = {
             cardId: selectedCard.card.id,
             pileIndex
-        }));
+        };
+
+        dispatch(discardAndEndTurn(discardPayload));
+
+        if (multiplayer.isMultiplayer) {
+            multiplayerService.sendData({ type: 'DISCARD', payload: discardPayload });
+        }
+
         setSelectedCard(null);
     };
+
 
     // AI Hand animation trigger
     useEffect(() => {
@@ -455,12 +488,12 @@ const Game = () => {
                 </motion.div>
             )}
 
-            {/* Sidebar Avatars */}
+            {/* Sidebar Avatars - Responsive */}
             <div style={{
-                position: 'fixed',
+                position: window.innerWidth > 768 ? 'fixed' : 'static',
                 bottom: '40px',
                 left: '40px',
-                display: 'flex',
+                display: window.innerWidth > 768 ? 'flex' : 'none',
                 alignItems: 'center',
                 gap: '15px',
                 zIndex: 100,
@@ -479,15 +512,17 @@ const Game = () => {
                 </motion.div>
                 <div>
                     <div style={{ fontWeight: '900', fontSize: '1.2rem' }}>YOU</div>
-                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Playing...</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                        {isPlayerTurn ? 'Your Turn' : 'Waiting...'}
+                    </div>
                 </div>
             </div>
 
             <div style={{
-                position: 'fixed',
+                position: window.innerWidth > 768 ? 'fixed' : 'static',
                 top: '100px',
                 right: '40px',
-                display: 'flex',
+                display: window.innerWidth > 768 ? 'flex' : 'none',
                 flexDirection: 'row-reverse',
                 alignItems: 'center',
                 gap: '15px',
@@ -503,36 +538,65 @@ const Game = () => {
                     transition={{ repeat: Infinity, duration: 2 }}
                     style={{ fontSize: '3.5rem' }}
                 >
-                    {theme.aiAvatar}
+                    {multiplayer.isMultiplayer ? '🧒' : theme.aiAvatar}
                 </motion.div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: '900', fontSize: '1.2rem' }}>AI</div>
-                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Opponent</div>
+                    <div style={{ fontWeight: '900', fontSize: '1.2rem' }}>
+                        {multiplayer.isMultiplayer ? 'FRIEND' : 'AI'}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                        {!isPlayerTurn ? 'Playing...' : 'Thinking...'}
+                    </div>
                 </div>
             </div>
+
+            {/* Mobile Header Avatars */}
+            <div style={{
+                display: window.innerWidth <= 768 ? 'flex' : 'none',
+                justifyContent: 'space-between',
+                padding: '0.5rem 1rem',
+                marginBottom: '1rem',
+                background: 'rgba(0,0,0,0.2)',
+                borderRadius: '15px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '2rem' }}>{theme.avatar}</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: isPlayerTurn ? '#0BE881' : 'white' }}>YOU</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row-reverse' }}>
+                    <div style={{ fontSize: '2rem' }}>{multiplayer.isMultiplayer ? '🧒' : theme.aiAvatar}</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: !isPlayerTurn ? '#FFD93D' : 'white' }}>
+                        {multiplayer.isMultiplayer ? 'FRIEND' : 'AI'}
+                    </div>
+                </div>
+            </div>
+
+
             <div style={{
                 maxWidth: '1400px',
                 margin: '0 auto',
                 display: 'flex',
+                flexDirection: window.innerWidth <= 600 ? 'column' : 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: '1rem',
                 marginBottom: '2rem',
                 background: 'rgba(255,255,255,0.15)',
-                padding: '1rem 2rem',
+                padding: '1rem',
                 borderRadius: '15px',
                 backdropFilter: 'blur(10px)'
             }}>
                 <button
                     className="btn btn-red"
                     onClick={() => navigate('/play-now')}
-                    style={{ fontSize: '1rem', padding: '10px 20px' }}
+                    style={{ fontSize: '0.9rem', padding: '8px 16px', width: window.innerWidth <= 600 ? '100%' : 'auto' }}
                 >
-                    <ArrowLeft size={18} />
-                    Leave Game
+                    <ArrowLeft size={16} />
+                    Leave
                 </button>
 
                 <div style={{
-                    fontSize: '1.5rem',
+                    fontSize: '1.2rem',
                     fontWeight: '800',
                     color: 'white',
                     textAlign: 'center'
@@ -544,21 +608,6 @@ const Game = () => {
                     >
                         {isPlayerTurn ? "Your Turn" : "AI's Turn"}
                     </motion.div>
-                    {!isPlayerTurn && gameState.aiStatus && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            style={{
-                                fontSize: '0.9rem',
-                                color: '#FFD93D',
-                                marginTop: '0.3rem',
-                                fontStyle: 'italic',
-                                fontWeight: '700'
-                            }}
-                        >
-                            {gameState.aiStatus}
-                        </motion.div>
-                    )}
                 </div>
 
                 <button
@@ -567,9 +616,9 @@ const Game = () => {
                         dispatch({ type: 'game/resetGame' });
                         window.location.reload();
                     }}
-                    style={{ fontSize: '1rem', padding: '10px 20px' }}
+                    style={{ fontSize: '0.9rem', padding: '8px 16px', width: window.innerWidth <= 600 ? '100%' : 'auto' }}
                 >
-                    <RotateCcw size={18} />
+                    <RotateCcw size={16} />
                     Restart
                 </button>
             </div>
@@ -579,14 +628,14 @@ const Game = () => {
                 maxWidth: '1400px',
                 margin: '0 auto',
                 display: 'grid',
-                gap: '2rem'
+                gap: '1.5rem'
             }}>
 
                 {/* Opponent (AI) Area */}
                 <div style={{
                     background: 'rgba(91,95,199,0.3)',
                     borderRadius: '20px',
-                    padding: '1.5rem',
+                    padding: '1rem',
                     backdropFilter: 'blur(10px)'
                 }}>
                     <div style={{
@@ -596,50 +645,22 @@ const Game = () => {
                         color: 'white',
                         marginBottom: '1rem'
                     }}>
-                        <h3 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
-                            🤖 AI Opponent
-                        </h3>
-                        <div style={{ fontSize: '1rem', opacity: 0.9 }}>
-                            Points: {gameState.players[1]?.score || 0}
-                        </div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>🤖 AI</h3>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Score: {gameState.players[1]?.score || 0}</div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
-                        {/* AI Stockpile */}
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.8rem', marginBottom: '5px', fontWeight: '700' }}>STOCKPILE ({gameState.players[1]?.stockpile.length})</div>
+                            <div style={{ color: 'white', fontSize: '0.7rem', marginBottom: '4px', fontWeight: '700' }}>STOCK ({gameState.players[1]?.stockpile.length})</div>
                             {gameState.players[1]?.stockpileTop && (
-                                <Card card={gameState.players[1].stockpileTop} size="normal" />
+                                <Card card={gameState.players[1].stockpileTop} size="small" />
                             )}
                         </div>
-
-                        {/* AI Hand (Face down but using Card for animations) */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.8rem', marginBottom: '5px', fontWeight: '700' }}>HAND</div>
-                            <div style={{ display: 'flex', gap: '5px', maxWidth: '250px', justifyContent: 'center' }}>
+                            <div style={{ color: 'white', fontSize: '0.7rem', marginBottom: '4px', fontWeight: '700' }}>HAND</div>
+                            <div style={{ display: 'flex', gap: '2px', maxWidth: '200px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                 {gameState.players[1]?.hand.map((card, i) => (
                                     <Card key={card.id || i} card={card} size="small" isFaceDown={true} />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* AI Discard Piles */}
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.8rem', marginBottom: '5px', fontWeight: '700' }}>DISCARDS</div>
-                            <div style={{ display: 'flex', gap: '5px' }}>
-                                {gameState.players[1]?.discardPiles.map((pile, i) => (
-                                    <div key={i} style={{
-                                        width: '50px',
-                                        height: '70px',
-                                        background: 'rgba(255,255,255,0.1)',
-                                        borderRadius: '5px',
-                                        border: '1px dashed white',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        {pile.length > 0 && <Card card={pile[pile.length - 1]} size="small" />}
-                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -650,55 +671,43 @@ const Game = () => {
                 <div style={{
                     background: 'rgba(255,255,255,0.2)',
                     borderRadius: '20px',
-                    padding: '2rem',
+                    padding: '1.5rem',
                     backdropFilter: 'blur(10px)'
                 }}>
                     <h3 style={{
-                        fontSize: '1.5rem',
+                        fontSize: '1.2rem',
                         fontWeight: '800',
                         color: 'white',
-                        marginBottom: '1.5rem',
+                        marginBottom: '1rem',
                         textAlign: 'center'
-                    }}>
-                        Building Piles (1-12)
-                    </h3>
+                    }}>Building Piles</h3>
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '1.5rem',
+                        gridTemplateColumns: window.innerWidth <= 500 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+                        gap: '1rem',
                         justifyItems: 'center'
                     }}>
                         {gameState.buildingPiles.map((pile, index) => (
                             <div
                                 key={index}
-                                className="building-pile"
                                 onClick={() => handleBuildingPileClick(index)}
                                 style={{
-                                    width: '100px',
-                                    height: '140px',
+                                    width: window.innerWidth <= 500 ? '70px' : '90px',
+                                    height: window.innerWidth <= 500 ? '100px' : '130px',
                                     background: pile.length > 0 ? '#0BE881' : 'rgba(255,255,255,0.3)',
-                                    borderRadius: '12px',
-                                    border: '3px dashed white',
+                                    borderRadius: '10px',
+                                    border: '2px dashed white',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '2.5rem',
-                                    fontWeight: '900',
-                                    color: 'white',
+                                    fontSize: '1.5rem',
                                     cursor: selectedCard ? 'pointer' : 'default',
                                     transition: 'all 0.2s',
-                                    position: 'relative',
-                                    boxShadow: pile.length > 0 ? '0 8px 15px rgba(0,0,0,0.2)' : 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (selectedCard) e.currentTarget.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'scale(1)';
+                                    position: 'relative'
                                 }}
                             >
                                 {pile.length > 0 ? (
-                                    <Card card={pile[pile.length - 1]} size="large" />
+                                    <Card card={pile[pile.length - 1]} size={window.innerWidth <= 500 ? 'small' : 'normal'} />
                                 ) : (
                                     <div style={{ opacity: 0.5 }}>{index + 1}</div>
                                 )}
@@ -721,22 +730,22 @@ const Game = () => {
                         color: 'white',
                         marginBottom: '1rem'
                     }}>
-                        <h3 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
-                            👤 You
-                        </h3>
-                        <div style={{ fontSize: '1rem', opacity: 0.9 }}>
-                            Discard to end turn
-                        </div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>👤 YOU</h3>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Stock: {gameState.players[0]?.stockpile.length}</div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '140px 1fr 1fr',
+                        gap: '1.5rem'
+                    }}>
                         {/* Player Stockpile */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.9rem', marginBottom: '8px', fontWeight: '700' }}>STOCKPILE ({gameState.players[0]?.stockpile.length})</div>
+                            <div style={{ color: 'white', fontSize: '0.75rem', marginBottom: '8px', fontWeight: '700' }}>STOCKPILE</div>
                             {gameState.players[0]?.stockpileTop && (
                                 <Card
                                     card={gameState.players[0].stockpileTop}
-                                    size="large"
+                                    size="normal"
                                     onClick={() => handleCardClick(gameState.players[0].stockpileTop, 'stockpile')}
                                     isSelected={selectedCard?.card.id === gameState.players[0].stockpileTop.id && selectedCard.source === 'stockpile'}
                                 />
@@ -745,12 +754,13 @@ const Game = () => {
 
                         {/* Player Hand */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.9rem', marginBottom: '8px', fontWeight: '700' }}>YOUR HAND</div>
-                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <div style={{ color: 'white', fontSize: '0.75rem', marginBottom: '8px', fontWeight: '700' }}>YOUR HAND</div>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
                                 {gameState.players[0]?.hand.map((card, index) => (
                                     <Card
                                         key={card.id}
                                         card={card}
+                                        size="normal"
                                         onClick={() => handleCardClick(card, 'hand')}
                                         isSelected={selectedCard?.card.id === card.id && selectedCard.source === 'hand'}
                                     />
@@ -762,32 +772,20 @@ const Game = () => {
                         <div style={{ textAlign: 'center' }}>
                             <div style={{
                                 color: 'white',
-                                fontSize: '0.9rem',
+                                fontSize: '0.75rem',
                                 marginBottom: '8px',
-                                fontWeight: '700',
-                                color: canPlayStockpile ? '#FFD93D' : 'white'
-                            }}>
-                                DISCARD PILES
-                                {canPlayStockpile && (
-                                    <div style={{ fontSize: '0.7rem', color: '#FF6B6B', marginTop: '4px' }}>
-                                        ⚠ MUST PLAY FROM STOCKPILE FIRST
-                                    </div>
-                                )}
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                                fontWeight: '700'
+                            }}>DISCARDS</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                                 {gameState.players[0]?.discardPiles.map((pile, index) => (
                                     <div
                                         key={index}
-                                        className="discard-pile"
                                         onClick={() => {
-                                            if (selectedCard && selectedCard.source === 'hand') {
-                                                handleDiscard(index);
-                                            } else if (pile.length > 0) {
-                                                handleCardClick(pile[pile.length - 1], `discard-${index}`);
-                                            }
+                                            if (selectedCard && selectedCard.source === 'hand') handleDiscard(index);
+                                            else if (pile.length > 0) handleCardClick(pile[pile.length - 1], `discard-${index}`);
                                         }}
                                         style={{
-                                            minHeight: '115px',
+                                            height: '90px',
                                             background: 'rgba(255,255,255,0.1)',
                                             borderRadius: '8px',
                                             border: '2px dashed white',
@@ -795,69 +793,52 @@ const Game = () => {
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             cursor: 'pointer',
-                                            transition: 'all 0.2s',
                                             position: 'relative'
                                         }}
                                     >
                                         {pile.length > 0 && (
                                             <Card
                                                 card={pile[pile.length - 1]}
-                                                size="normal"
+                                                size="small"
                                                 isSelected={selectedCard?.card.id === pile[pile.length - 1].id && selectedCard.source === `discard-${index}`}
                                             />
                                         )}
-                                        {pile.length === 0 && <Plus size={24} color="white" style={{ opacity: 0.3 }} />}
+                                        {pile.length === 0 && <Plus size={20} color="white" style={{ opacity: 0.3 }} />}
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
 
             {/* Instructions Overlay */}
             {selectedCard && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, scale: 0.8, x: '-50%' }}
+                    animate={{ opacity: 1, scale: 1, x: '-50%' }}
                     style={{
                         position: 'fixed',
-                        bottom: '30px',
+                        bottom: '20px',
                         left: '50%',
-                        transform: 'translateX(-50%)',
-                        background: 'rgba(0,0,0,0.8)',
+                        background: 'rgba(0,0,0,0.9)',
                         color: 'white',
-                        padding: '1rem 2rem',
-                        borderRadius: '15px',
+                        padding: '0.8rem 1.5rem',
+                        borderRadius: '12px',
                         zIndex: 100,
                         backdropFilter: 'blur(5px)',
                         textAlign: 'center',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                        border: '2px solid #FFD93D'
+                        width: '90%',
+                        maxWidth: '400px',
+                        border: '2px solid var(--accent-color)'
                     }}
                 >
-                    <div style={{ fontWeight: '800', color: '#FFD93D', marginBottom: '5px' }}>CARD SELECTED!</div>
-                    <div style={{ fontSize: '0.9rem' }}>
-                        Click a <b>Building Pile</b> to Play <br />
-                        {selectedCard.source === 'hand' && <span>or a <b>Discard Pile</b> to end turn</span>}
-                    </div>
+                    <div style={{ fontWeight: '800', color: 'var(--accent-color)', fontSize: '0.9rem' }}>CARD SELECTED</div>
+                    <div style={{ fontSize: '0.8rem' }}>Click a Building Pile or Discard</div>
                     <button
                         onClick={() => setSelectedCard(null)}
-                        style={{
-                            marginTop: '10px',
-                            background: '#FF4757',
-                            border: 'none',
-                            color: 'white',
-                            padding: '5px 15px',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: '700'
-                        }}
-                    >
-                        CANCEL
-                    </button>
+                        style={{ marginTop: '8px', background: '#FF4757', border: 'none', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem' }}
+                    >CANCEL</button>
                 </motion.div>
             )}
         </div>

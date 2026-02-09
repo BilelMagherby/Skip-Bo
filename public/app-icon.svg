@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="100" fill="#5B5FC7"/>
+  
+  <!-- Card 1 (Bottom) -->
+  <rect x="180" y="140" width="180" height="260" rx="20" fill="white" transform="rotate(-15 180 140)" />
+  <rect x="200" y="160" width="140" height="220" rx="15" fill="#F1F2F6" transform="rotate(-15 180 140)" />
+  
+  <!-- Card 2 (Top) -->
+  <rect x="220" y="120" width="180" height="260" rx="20" fill="white" stroke="#FFD93D" stroke-width="8" transform="rotate(5 220 120)" />
+  <rect x="240" y="140" width="140" height="220" rx="15" fill="#FFFBE6" transform="rotate(5 220 120)" />
+  
+  <!-- Text on Card -->
+  <text x="310" y="270" fill="#FF4757" font-family="'Nunito', sans-serif" font-weight="900" font-size="80" text-anchor="middle" transform="rotate(5 310 270)">SB</text>
+  
+  <!-- Playful dots -->
+  <circle cx="100" cy="100" r="30" fill="#FFD93D" opacity="0.8" />
+  <circle cx="412" cy="412" r="40" fill="#0BE881" opacity="0.8" />
+  <circle cx="80" cy="400" r="25" fill="#FF4757" opacity="0.8" />
+</svg>

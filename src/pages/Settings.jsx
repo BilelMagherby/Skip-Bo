@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Volume2, VolumeX, Bell, BellOff, Globe, User, Lock, Palette } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    setSoundEnabled, setMusicEnabled, setNotificationsEnabled,
+    setTournamentAlertsEnabled, setLanguage, setWebsiteTheme,
+    setUsername, setEmail, setProfileVisibility, setShowOnlineStatus,
+    resetSettings
+} from '../store/themeSlice';
+
 
 const Settings = () => {
-    const [soundEnabled, setSoundEnabled] = useState(true);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-    const [language, setLanguage] = useState('English');
-    const [theme, setTheme] = useState('Default');
+    const dispatch = useDispatch();
+    const settings = useSelector(state => state.theme);
 
     const settingsSections = [
         {
@@ -16,16 +22,16 @@ const Settings = () => {
                 {
                     label: 'Sound Effects',
                     type: 'toggle',
-                    value: soundEnabled,
-                    onChange: setSoundEnabled,
-                    icon: soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />
+                    value: settings.soundEnabled,
+                    onChange: (val) => dispatch(setSoundEnabled(val)),
+                    icon: settings.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />
                 },
                 {
                     label: 'Background Music',
                     type: 'toggle',
-                    value: true,
-                    onChange: () => { },
-                    icon: <Volume2 size={20} />
+                    value: settings.musicEnabled,
+                    onChange: (val) => dispatch(setMusicEnabled(val)),
+                    icon: settings.musicEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />
                 }
             ]
         },
@@ -36,16 +42,16 @@ const Settings = () => {
                 {
                     label: 'Game Invites',
                     type: 'toggle',
-                    value: notificationsEnabled,
-                    onChange: setNotificationsEnabled,
-                    icon: notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />
+                    value: settings.notificationsEnabled,
+                    onChange: (val) => dispatch(setNotificationsEnabled(val)),
+                    icon: settings.notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />
                 },
                 {
                     label: 'Tournament Alerts',
                     type: 'toggle',
-                    value: true,
-                    onChange: () => { },
-                    icon: <Bell size={20} />
+                    value: settings.tournamentAlertsEnabled,
+                    onChange: (val) => dispatch(setTournamentAlertsEnabled(val)),
+                    icon: settings.tournamentAlertsEnabled ? <Bell size={20} /> : <BellOff size={20} />
                 }
             ]
         },
@@ -56,17 +62,17 @@ const Settings = () => {
                 {
                     label: 'Language',
                     type: 'select',
-                    value: language,
-                    onChange: setLanguage,
+                    value: settings.language,
+                    onChange: (val) => dispatch(setLanguage(val)),
                     options: ['English', 'Spanish', 'French', 'German'],
                     icon: <Globe size={20} />
                 },
                 {
                     label: 'Theme',
                     type: 'select',
-                    value: theme,
-                    onChange: setTheme,
-                    options: ['Default', 'Dark', 'Light', 'Colorful'],
+                    value: settings.websiteTheme,
+                    onChange: (val) => dispatch(setWebsiteTheme(val.toLowerCase())),
+                    options: ['Default', 'Dark', 'Forest', 'Sunset', 'Volcano'],
                     icon: <Palette size={20} />
                 }
             ]
@@ -78,14 +84,16 @@ const Settings = () => {
                 {
                     label: 'Username',
                     type: 'input',
-                    value: 'Player123',
+                    value: settings.username,
+                    onChange: (val) => dispatch(setUsername(val)),
                     placeholder: 'Enter username',
                     icon: <User size={20} />
                 },
                 {
                     label: 'Email',
                     type: 'input',
-                    value: 'player@skipbo.com',
+                    value: settings.email,
+                    onChange: (val) => dispatch(setEmail(val)),
                     placeholder: 'Enter email',
                     icon: <User size={20} />
                 }
@@ -98,21 +106,22 @@ const Settings = () => {
                 {
                     label: 'Profile Visibility',
                     type: 'select',
-                    value: 'Public',
-                    onChange: () => { },
+                    value: settings.profileVisibility,
+                    onChange: (val) => dispatch(setProfileVisibility(val)),
                     options: ['Public', 'Friends Only', 'Private'],
                     icon: <Lock size={20} />
                 },
                 {
                     label: 'Show Online Status',
                     type: 'toggle',
-                    value: true,
-                    onChange: () => { },
+                    value: settings.showOnlineStatus,
+                    onChange: (val) => dispatch(setShowOnlineStatus(val)),
                     icon: <Lock size={20} />
                 }
             ]
         }
     ];
+
 
     return (
         <div style={{ width: '100%', position: 'relative' }}>
@@ -328,7 +337,8 @@ const Settings = () => {
                                         {setting.type === 'input' && (
                                             <input
                                                 type="text"
-                                                defaultValue={setting.value}
+                                                value={setting.value}
+                                                onChange={(e) => setting.onChange(e.target.value)}
                                                 placeholder={setting.placeholder}
                                                 style={{
                                                     padding: '8px 16px',
@@ -342,6 +352,7 @@ const Settings = () => {
                                                 }}
                                             />
                                         )}
+
                                     </div>
                                 ))}
                             </div>
@@ -354,19 +365,28 @@ const Settings = () => {
                         justifyContent: 'center',
                         marginTop: '3rem'
                     }}>
-                        <button className="btn btn-yellow" style={{
-                            fontSize: '1.1rem',
-                            padding: '16px 40px'
-                        }}>
+                        <button
+                            className="btn btn-yellow"
+                            onClick={() => alert('Settings saved successfully!')}
+                            style={{
+                                fontSize: '1.1rem',
+                                padding: '16px 40px'
+                            }}
+                        >
                             Save Changes
                         </button>
-                        <button className="btn btn-red" style={{
-                            fontSize: '1.1rem',
-                            padding: '16px 40px'
-                        }}>
+                        <button
+                            className="btn btn-red"
+                            onClick={() => dispatch(resetSettings())}
+                            style={{
+                                fontSize: '1.1rem',
+                                padding: '16px 40px'
+                            }}
+                        >
                             Reset to Default
                         </button>
                     </div>
+
                 </div>
             </section>
 

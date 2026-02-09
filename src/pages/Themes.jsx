@@ -48,29 +48,30 @@ const Themes = () => {
             {/* Header */}
             <section style={{
                 background: 'var(--primary-color)',
-                padding: '4rem 2rem',
+                padding: '4rem 1.5rem',
                 textAlign: 'center',
                 color: 'white',
                 transition: 'background 0.5s ease'
             }}>
-                <motion.h1
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem' }}
-                >
-                    Customization
-                </motion.h1>
-                <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>Express yourself with unique styles</p>
+                <div className="container">
+                    <motion.h1
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}
+                    >
+                        Customization
+                    </motion.h1>
+                    <p style={{ fontSize: '1.1rem', opacity: 0.9 }}>Express yourself with unique styles</p>
+                </div>
             </section>
 
             <motion.div
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
+                className="container"
                 style={{
-                    maxWidth: '1200px',
-                    margin: '0 auto',
-                    padding: '3rem 2rem',
+                    padding: '3rem 1.5rem',
                     display: 'grid',
                     gap: '3rem'
                 }}
@@ -78,15 +79,15 @@ const Themes = () => {
                 {/* Avatar Selection */}
                 <motion.section variants={itemVariants}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-                        <User size={32} color="#5B5FC7" />
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Your Avatar</h2>
+                        <User size={28} color="#5B5FC7" />
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800' }}>Your Avatar</h2>
                     </div>
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
                         gap: '1rem',
                         background: 'white',
-                        padding: '2rem',
+                        padding: '1.5rem',
                         borderRadius: '24px',
                         boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
                     }}>
@@ -97,12 +98,12 @@ const Themes = () => {
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => dispatch(setAvatar(avatar))}
                                 style={{
-                                    fontSize: '3rem',
+                                    fontSize: '2.5rem',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    height: '80px',
+                                    height: '75px',
                                     borderRadius: '16px',
                                     background: currentTheme.avatar === avatar ? '#EDF0FF' : 'transparent',
                                     border: currentTheme.avatar === avatar ? '3px solid #5B5FC7' : '3px solid transparent',
@@ -118,15 +119,15 @@ const Themes = () => {
                 {/* AI Avatar Selection */}
                 <motion.section variants={itemVariants}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-                        <User size={32} color="#FF4757" />
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Opponent Avatar</h2>
+                        <User size={28} color="#FF4757" />
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800' }}>Opponent Avatar</h2>
                     </div>
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
                         gap: '1rem',
                         background: 'white',
-                        padding: '2rem',
+                        padding: '1.5rem',
                         borderRadius: '24px',
                         boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
                     }}>
@@ -137,12 +138,12 @@ const Themes = () => {
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => dispatch(setAiAvatar(avatar))}
                                 style={{
-                                    fontSize: '3rem',
+                                    fontSize: '2.5rem',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    height: '80px',
+                                    height: '75px',
                                     borderRadius: '16px',
                                     background: currentTheme.aiAvatar === avatar ? '#FFEDED' : 'transparent',
                                     border: currentTheme.aiAvatar === avatar ? '3px solid #FF4757' : '3px solid transparent',
@@ -158,13 +159,13 @@ const Themes = () => {
                 {/* Website Theme Selection */}
                 <motion.section variants={itemVariants}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-                        <Palette size={32} color="#5B5FC7" />
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>App Theme</h2>
+                        <Palette size={28} color="#5B5FC7" />
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800' }}>App Theme</h2>
                     </div>
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '1.5rem'
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                        gap: '1.2rem'
                     }}>
                         {websiteThemes.map(theme => (
                             <motion.div
@@ -173,24 +174,24 @@ const Themes = () => {
                                 onClick={() => dispatch(setWebsiteTheme(theme.id))}
                                 style={{
                                     background: 'white',
-                                    padding: '1.5rem',
+                                    padding: '1.2rem',
                                     borderRadius: '20px',
                                     cursor: 'pointer',
                                     border: currentTheme.websiteTheme === theme.id ? '3px solid #5B5FC7' : '3px solid transparent',
                                     boxShadow: '0 8px 25px rgba(0,0,0,0.05)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '15px'
+                                    gap: '12px'
                                 }}
                             >
                                 <div style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: '10px',
+                                    width: '35px',
+                                    height: '35px',
+                                    borderRadius: '8px',
                                     background: theme.color
                                 }} />
-                                <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>{theme.name}</span>
-                                {currentTheme.websiteTheme === theme.id && <Check color="#5B5FC7" size={24} style={{ marginLeft: 'auto' }} />}
+                                <span style={{ fontWeight: '700', fontSize: '1rem' }}>{theme.name}</span>
+                                {currentTheme.websiteTheme === theme.id && <Check color="#5B5FC7" size={20} style={{ marginLeft: 'auto' }} />}
                             </motion.div>
                         ))}
                     </div>
@@ -199,22 +200,22 @@ const Themes = () => {
                 {/* Card Style Selection */}
                 <motion.section variants={itemVariants}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-                        <Layers size={32} color="#5B5FC7" />
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Card Style</h2>
+                        <Layers size={28} color="#5B5FC7" />
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800' }}>Card Style</h2>
                     </div>
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                         gap: '2rem'
                     }}>
                         {cardStyles.map(style => (
                             <motion.div
                                 key={style.id}
-                                whileHover={{ scale: 1.02 }}
+                                whileHover={{ y: -5 }}
                                 onClick={() => dispatch(setCardStyle(style.id))}
                                 style={{
                                     background: 'white',
-                                    padding: '2rem',
+                                    padding: '1.8rem',
                                     borderRadius: '24px',
                                     cursor: 'pointer',
                                     border: currentTheme.cardStyle === style.id ? '3px solid #5B5FC7' : '3px solid transparent',
@@ -225,12 +226,12 @@ const Themes = () => {
                                 }}
                             >
                                 <div>
-                                    <h3 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '0.5rem' }}>{style.name}</h3>
-                                    <p style={{ opacity: 0.7, marginBottom: '1.5rem', fontSize: '0.9rem' }}>{style.description}</p>
+                                    <h3 style={{ fontSize: '1.3rem', fontWeight: '800', marginBottom: '0.4rem' }}>{style.name}</h3>
+                                    <p style={{ opacity: 0.7, marginBottom: '1.5rem', fontSize: '0.85rem' }}>{style.description}</p>
                                 </div>
                                 <div style={{
                                     display: 'flex',
-                                    gap: '12px',
+                                    gap: '8px',
                                     justifyContent: 'center',
                                     padding: '10px',
                                     background: '#F8F9FA',
@@ -238,39 +239,38 @@ const Themes = () => {
                                 }}>
                                     {[1, 12, 'SB', 'back'].map((val, i) => {
                                         let cardStyle = {
-                                            width: '50px',
-                                            height: '75px',
+                                            width: '40px',
+                                            height: '60px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: '1rem',
+                                            fontSize: '0.9rem',
                                             fontWeight: '900',
-                                            borderRadius: '8px',
+                                            borderRadius: '6px',
                                             background: '#5B5FC7',
                                             color: 'white',
-                                            border: '2px solid rgba(255,255,255,0.8)',
+                                            border: '1px solid rgba(255,255,255,0.8)',
                                             position: 'relative',
                                             overflow: 'hidden'
                                         };
 
-                                        // Apply theme-specific preview tweaks
                                         if (style.id === 'volcano') {
                                             cardStyle.background = val === 'back' ? '#1a0505' : (val === 'SB' ? '#ff4500' : '#8b0000');
-                                            cardStyle.boxShadow = '0 0 15px #ff4500';
-                                            cardStyle.border = '2px solid #ff8c00';
+                                            cardStyle.boxShadow = '0 0 10px #ff4500';
+                                            cardStyle.border = '1px solid #ff8c00';
                                         } else if (style.id === 'tropical') {
                                             cardStyle.background = val === 'back' ? '#FAD390' : (val === 'SB' ? '#FF6B6B' : '#4BCFFA');
                                             cardStyle.color = val === 'SB' ? 'white' : '#2F3542';
-                                            cardStyle.border = '2px solid white';
+                                            cardStyle.border = '1px solid white';
                                         } else if (style.id === 'treasure') {
                                             cardStyle.background = val === 'back' ? '#3d2b1f' : (val === 'SB' ? '#FFD700' : '#5d4037');
-                                            cardStyle.boxShadow = '0 0 10px #FFD700';
-                                            cardStyle.border = '2px solid #FFD700';
+                                            cardStyle.boxShadow = '0 0 5px #FFD700';
+                                            cardStyle.border = '1px solid #FFD700';
                                             cardStyle.color = val === 'SB' ? '#4A00E0' : '#FFD700';
                                         } else if (style.id === 'neon') {
                                             cardStyle.background = val === 'back' ? '#000' : (val === 'SB' ? '#ff00ff' : '#00ffff');
-                                            cardStyle.boxShadow = '0 0 10px #00ffff';
-                                            cardStyle.border = '2px solid #ff00ff';
+                                            cardStyle.boxShadow = '0 0 8px #00ffff';
+                                            cardStyle.border = '1px solid #ff00ff';
                                         }
 
                                         return (

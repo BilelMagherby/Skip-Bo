@@ -253,9 +253,19 @@ const gameSlice = createSlice({
         },
         resetGame: (state) => {
             Object.assign(state, initialState);
+        },
+        syncPlayers: (state, action) => {
+            state.players = action.payload;
+        },
+        syncState: (state, action) => {
+            return action.payload;
         }
     },
 });
 
-export const { addPlayer, startGame, drawCards, playCardToBuildingPile, discardAndEndTurn, executeSingleAiAction, resetGame } = gameSlice.actions;
+
+
+export const { addPlayer, startGame, drawCards, playCardToBuildingPile, discardAndEndTurn, executeSingleAiAction, resetGame, syncPlayers, syncState } = gameSlice.actions;
+
+
 export default gameSlice.reducer;

@@ -15,7 +15,9 @@ const JoinRoom = () => {
     const { isMultiplayer, connectedPeerId } = useSelector(state => state.multiplayer);
     const { players, gameStatus } = useSelector(state => state.game);
     const [roomCode, setRoomCode] = useState('');
+    const [playerName, setPlayerName] = useState('Super Friend');
     const [error, setError] = useState('');
+
 
     useEffect(() => {
         dispatch({ type: 'game/resetGame' });
@@ -43,11 +45,12 @@ const JoinRoom = () => {
 
         try {
             multiplayerService.init();
-            multiplayerService.connectToPeer(roomCode.trim());
+            multiplayerService.connectToPeer(roomCode.trim(), playerName.trim());
             // DON'T navigate yet! Wait for connection 'open' and 'START_GAME' sync.
         } catch (err) {
             setError('Could not connect. Make sure the code is correct! 🧐');
         }
+
 
     };
 
@@ -101,6 +104,27 @@ const JoinRoom = () => {
                     {!isMultiplayer ? (
                         <form onSubmit={handleJoin} style={{ display: 'grid', gap: '2rem' }}>
                             <div>
+                                <label style={{ display: 'block', fontWeight: '800', marginBottom: '10px', fontSize: '1.2rem' }}>
+                                    Your Name 🧒
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter your name"
+                                    value={playerName}
+                                    onChange={(e) => setPlayerName(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '15px 25px',
+                                        borderRadius: '20px',
+                                        border: '4px solid var(--bg-color)',
+                                        fontSize: '1.1rem',
+                                        fontWeight: '700',
+                                        outline: 'none',
+                                        textAlign: 'center',
+                                        marginBottom: '1rem'
+                                    }}
+                                />
+
                                 <label style={{ display: 'block', fontWeight: '800', marginBottom: '15px', fontSize: '1.3rem' }}>
                                     Paste the Room Code Here 🎈
                                 </label>
@@ -130,6 +154,7 @@ const JoinRoom = () => {
                                     />
                                 </div>
                             </div>
+
 
                             {error && (
                                 <motion.div

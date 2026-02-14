@@ -15,6 +15,8 @@ const CreateRoom = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const { peerId } = useSelector(state => state.multiplayer);
+    const gameState = useSelector(state => state.game);
+
     const [roomName, setRoomName] = useState("My Awesome Room");
     const [maxPlayers, setMaxPlayers] = useState(4);
     const [privacy, setPrivacy] = useState("Public");
@@ -24,7 +26,7 @@ const CreateRoom = () => {
     useEffect(() => {
         dispatch({ type: 'game/resetGame' });
         multiplayerService.startHosting();
-        dispatch(addPlayer('Host (You)'));
+        dispatch(addPlayer('Host'));
     }, [dispatch]);
 
 
@@ -278,10 +280,11 @@ const CreateRoom = () => {
                         {/* Action Buttons */}
                         <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                             <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileHover={{ scale: gameState.players.length >= 2 ? 1.05 : 1 }}
+                                whileTap={{ scale: gameState.players.length >= 2 ? 0.95 : 1 }}
                                 className="btn btn-yellow"
                                 onClick={() => {
+                                    if (gameState.players.length < 2) return;
                                     dispatch(startGame({ stockpileSize: deckSize }));
                                     // Give redux a tiny moment to update state before sending
                                     setTimeout(() => {
@@ -290,19 +293,19 @@ const CreateRoom = () => {
                                         navigate('/game');
                                     }, 100);
                                 }}
-
-                                disabled={useSelector(state => state.game.players).length < 2 && privacy === 'Private'}
+                                disabled={gameState.players.length < 2}
                                 style={{
                                     padding: '20px 60px',
                                     fontSize: '1.3rem',
                                     width: '100%',
-                                    opacity: (useSelector(state => state.game.players).length < 2 && privacy === 'Private') ? 0.6 : 1,
-                                    cursor: (useSelector(state => state.game.players).length < 2 && privacy === 'Private') ? 'not-allowed' : 'pointer'
+                                    opacity: gameState.players.length < 2 ? 0.6 : 1,
+                                    cursor: gameState.players.length < 2 ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                <Play size={24} />
+                                <Play size={28} />
                                 Start Multiplayer Match!
                             </motion.button>
+
                         </div>
 
                     </div>

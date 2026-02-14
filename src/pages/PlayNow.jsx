@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Play, Clock, Trophy, Link as LinkIcon } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { resetGame, startAiGame } from '../store/gameSlice';
+import { resetMultiplayer } from '../store/multiplayerSlice';
 import multiplayerService from '../services/MultiplayerService';
 
 const PlayNow = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [selectedMode, setSelectedMode] = useState(null);
 
     const handleJoinRoom = () => {
@@ -302,6 +306,8 @@ const PlayNow = () => {
                                 className="btn btn-yellow"
                                 onClick={() => {
                                     if (selectedMode === 'offline') {
+                                        dispatch(resetMultiplayer());
+                                        dispatch(startAiGame());
                                         navigate('/game');
                                     } else if (selectedMode === 'create') {
                                         navigate('/create-room');

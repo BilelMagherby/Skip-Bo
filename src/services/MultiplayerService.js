@@ -1,7 +1,7 @@
 import Peer from 'peerjs';
 import { store } from '../store';
 import { setMultiplayerInfo } from '../store/multiplayerSlice';
-import { startGame, addPlayer, playCardToBuildingPile, discardAndEndTurn } from '../store/gameSlice';
+import { startGame, addPlayer, playCardToBuildingPile, discardAndEndTurn, drawCards } from '../store/gameSlice';
 
 class MultiplayerService {
     constructor() {
@@ -27,13 +27,14 @@ class MultiplayerService {
                 this.conn = conn;
                 this.setupConnection();
                 store.dispatch(setMultiplayerInfo({ connectedPeerId: conn.peer }));
-                // Send current game state if already playing (optional)
             }
         });
     }
 
-    connectToPeer(targetPeerId) {
+    connectToPeer(targetPeerId, playerName = 'Guest') {
         this.isHost = false;
+        store.dispatch(setMultiplayerInfo({ isHost: false }));
+        this.playerName = playerName;
         this.conn = this.peer.connect(targetPeerId);
         this.setupConnection();
     }
@@ -44,10 +45,9 @@ class MultiplayerService {
             // CRITICAL: Set isMultiplayer to true immediately on connection!
             store.dispatch(setMultiplayerInfo({ connectedPeerId: this.conn.peer, isMultiplayer: true }));
 
-
             // If we are the guest, tell the host we joined
             if (!this.isHost) {
-                this.sendData({ type: 'PLAYER_JOINED', payload: { name: 'Guest Friend' } });
+                this.sendData({ type: 'PLAYER_JOINED', payload: { name: this.playerName || 'Guest Friend' } });
             }
         });
 
@@ -85,24 +85,45 @@ class MultiplayerService {
                 store.dispatch({ type: 'game/syncState', payload });
                 break;
 
-
             case 'PLAY_CARD':
                 store.dispatch(playCardToBuildingPile(payload));
                 break;
             case 'DISCARD':
-                store.dispatch(discardAndEndTurn(payload));
+                store.dispatch(discardAndEndTurn({ ...payload, force: true }));
+                break;
+
+
+            case 'DRAW_CARDS':
+                store.dispatch(drawCards());
+                break;
+
+            case 'RESTART_GAME':
+                store.dispatch({ type: 'game/resetGame' });
+                window.location.reload();
                 break;
 
             case 'SYNC_STATE':
-                // For direct state override if needed
+                // Guest receives full state from host
+                store.dispatch({ type: 'game/syncState', payload: payload });
                 break;
+
+            case 'REQUEST_SYNC':
+                // Host receives this and re-sends full state
+                if (this.isHost) {
+                    const fullState = store.getState().game;
+                    this.sendData({ type: 'SYNC_STATE', payload: fullState });
+                }
+                break;
+
             default:
                 console.log('Unknown data type:', type);
         }
     }
 
+
     startHosting() {
         this.isHost = true;
+        store.dispatch(setMultiplayerInfo({ isHost: true }));
         this.init();
     }
 }

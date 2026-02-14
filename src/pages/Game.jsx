@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RotateCcw, Plus, Share2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addPlayer, startGame, drawCards, playCardToBuildingPile, discardAndEndTurn, executeSingleAiAction } from '../store/gameSlice';
+import { addPlayer, startGame, startAiGame, drawCards, playCardToBuildingPile, discardAndEndTurn, executeSingleAiAction } from '../store/gameSlice';
 import multiplayerService from '../services/MultiplayerService';
+import { store } from '../store';
 
 const Game = () => {
     const navigate = useNavigate();
@@ -13,31 +14,80 @@ const Game = () => {
     const theme = useSelector((state) => state.theme);
     const multiplayer = useSelector((state) => state.multiplayer);
     const [selectedCard, setSelectedCard] = useState(null);
+
+    // PERSPECTIVE & TURN LOGIC (Must be before useEffects)
+    const localPlayerIndex = multiplayer.isMultiplayer
+        ? (multiplayer.isHost ? 0 : 1)
+        : 0;
+    const remotePlayerIndex = localPlayerIndex === 0 ? 1 : 0;
+
+    const isLocalPlayerTurn = multiplayer.isMultiplayer
+        ? (multiplayer.isHost ? gameState.currentPlayerIndex === 0 : gameState.currentPlayerIndex === 1)
+        : gameState.currentPlayerIndex === 0;
+
+    const isPlayerTurn = isLocalPlayerTurn;
+
+    const otherPlayerName = multiplayer.isMultiplayer
+        ? (gameState.players[remotePlayerIndex]?.name || 'Friend')
+        : 'AI';
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+    // If for some reason we navigate here but the game isn't rolling or data is missing, show a loader
+    if (!gameState.players || gameState.gameStatus === 'lobby' || gameState.players.length < 2) {
+
+        return (
+            <div style={{
+                width: '100vw',
+                height: '100vh',
+                background: 'var(--primary-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                gap: '2rem'
+            }}>
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                >
+                    <RotateCcw size={80} />
+                </motion.div>
+                <h2 style={{ fontSize: '2rem', fontWeight: '900' }}>Initializing Game...</h2>
+                <p style={{ opacity: 0.8 }}>Dealing the cards, please wait! 🃏</p>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    {multiplayer.isMultiplayer && (
+                        <button
+                            onClick={() => {
+                                multiplayerService.sendData({ type: 'REQUEST_SYNC' });
+                            }}
+                            style={{ background: 'var(--accent-color)', color: 'black', border: 'none', padding: '12px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            Sync Now ✨
+                        </button>
+                    )}
+                    <button
+                        onClick={() => navigate('/')}
+                        style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '10px', cursor: 'pointer' }}
+                    >
+                        Back to Menu
+                    </button>
+                </div>
+
+            </div>
+        );
+    }
+
     const [handAnim, setHandAnim] = useState({ show: false, x: 0, y: 0 });
+
 
     const triggerHandAnim = (x, y) => {
         setHandAnim({ show: true, x, y });
         setTimeout(() => setHandAnim({ show: false, x: 0, y: 0 }), 1000);
     };
 
-    useEffect(() => {
-        // Initialize game logic ONLY for local games
-        // If game is already playing (synced from host) OR we are connected to a peer, DO NOT re-initialize!
-        if (gameState.gameStatus === 'playing' || multiplayer.isMultiplayer || multiplayer.connectedPeerId) return;
-
-        if (gameState.gameStatus === 'lobby') {
-            if (gameState.players.length === 0) {
-                // Local AI game - ONLY if not multiplayer
-                dispatch(addPlayer('You'));
-                dispatch(addPlayer('AI Opponent'));
-                setTimeout(() => dispatch(startGame()), 100);
-            }
-        }
-    }, [dispatch, gameState.gameStatus, gameState.players, multiplayer.isMultiplayer, multiplayer.connectedPeerId]);
-
-
-
-
+    // AI TURN LOGIC
     useEffect(() => {
         // AI Turn logic: ONLY for local games
         if (multiplayer.isMultiplayer) return;
@@ -53,31 +103,39 @@ const Game = () => {
 
 
     useEffect(() => {
-        // Hand refill logic: Draw 5 more only IF hand is empty
-        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-        if (gameState.gameStatus === 'playing' && currentPlayer && currentPlayer.hand.length === 0) {
-            // Short delay before drawing to let player see they empty their hand
-            const timer = setTimeout(() => {
-                dispatch(drawCards());
-            }, 800);
-            return () => clearTimeout(timer);
+        // Hand refill logic: 
+        // 1. At the START of the turn, refill to 5
+        // 2. During the turn, if hand is EMPTY, refill to 5
+        if (gameState.gameStatus === 'playing' && isLocalPlayerTurn && currentPlayer) {
+            if (currentPlayer.hand.length === 0 || (gameState.currentPlayerIndex === (multiplayer.isHost ? 0 : 1) && !gameState.handRefilledThisTurn)) {
+                const timer = setTimeout(() => {
+                    dispatch(drawCards());
+                    if (multiplayer.isMultiplayer) {
+                        multiplayerService.sendData({ type: 'DRAW_CARDS' });
+                        // Also sync full state to be safe
+                        setTimeout(() => {
+                            multiplayerService.sendData({ type: 'SYNC_STATE', payload: store.getState().game });
+                        }, 200);
+                    }
+                }, 400);
+                return () => clearTimeout(timer);
+            }
         }
-    }, [gameState.currentPlayerIndex, gameState.gameStatus, gameState.players, dispatch]);
+    }, [gameState.currentPlayerIndex, gameState.gameStatus, gameState.players, dispatch, isLocalPlayerTurn, multiplayer.isMultiplayer, multiplayer.isHost]);
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
-    // In multiplayer: Host is index 0, Guest is index 1
-    const isLocalPlayerTurn = multiplayer.isMultiplayer
-        ? (multiplayer.isHost ? gameState.currentPlayerIndex === 0 : gameState.currentPlayerIndex === 1)
-        : gameState.currentPlayerIndex === 0;
 
-    const isPlayerTurn = isLocalPlayerTurn;
 
-    const canPlayStockpile = isPlayerTurn && gameState.players[gameState.currentPlayerIndex]?.stockpileTop && gameState.buildingPiles.some(pile => {
+
+
+    const canPlayStockpile = isPlayerTurn && gameState.players[gameState.currentPlayerIndex]?.stockpileTop && (gameState.buildingPiles || []).some(pile => {
+        if (!pile) return false;
         const expectedValue = pile.length + 1;
-        const topStockCard = gameState.players[gameState.currentPlayerIndex].stockpileTop;
+        const topStockCard = gameState.players[gameState.currentPlayerIndex]?.stockpileTop;
+        if (!topStockCard) return false;
         return topStockCard.type === 'skipbo' || topStockCard.value === expectedValue;
     });
+
 
 
     const handleCardClick = (card, source) => {
@@ -542,7 +600,7 @@ const Game = () => {
                 </motion.div>
                 <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: '900', fontSize: '1.2rem' }}>
-                        {multiplayer.isMultiplayer ? 'FRIEND' : 'AI'}
+                        {otherPlayerName}
                     </div>
                     <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
                         {!isPlayerTurn ? 'Playing...' : 'Thinking...'}
@@ -566,7 +624,7 @@ const Game = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row-reverse' }}>
                     <div style={{ fontSize: '2rem' }}>{multiplayer.isMultiplayer ? '🧒' : theme.aiAvatar}</div>
                     <div style={{ fontSize: '0.8rem', fontWeight: '800', color: !isPlayerTurn ? '#FFD93D' : 'white' }}>
-                        {multiplayer.isMultiplayer ? 'FRIEND' : 'AI'}
+                        {otherPlayerName}
                     </div>
                 </div>
             </div>
@@ -606,13 +664,16 @@ const Game = () => {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                     >
-                        {isPlayerTurn ? "Your Turn" : "AI's Turn"}
+                        {isPlayerTurn ? "Your Turn" : `${gameState.players[gameState.currentPlayerIndex]?.name || otherPlayerName}'s Turn`}
                     </motion.div>
                 </div>
 
                 <button
                     className="btn btn-yellow"
                     onClick={() => {
+                        if (multiplayer.isMultiplayer) {
+                            multiplayerService.sendData({ type: 'RESTART_GAME' });
+                        }
                         dispatch({ type: 'game/resetGame' });
                         window.location.reload();
                     }}
@@ -645,21 +706,23 @@ const Game = () => {
                         color: 'white',
                         marginBottom: '1rem'
                     }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>🤖 AI</h3>
-                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Score: {gameState.players[1]?.score || 0}</div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>
+                            {multiplayer.isMultiplayer ? '👤' : '🤖'} {otherPlayerName}
+                        </h3>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Score: {gameState.players[remotePlayerIndex]?.score || 0}</div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ color: 'white', fontSize: '0.7rem', marginBottom: '4px', fontWeight: '700' }}>STOCK ({gameState.players[1]?.stockpile.length})</div>
-                            {gameState.players[1]?.stockpileTop && (
-                                <Card card={gameState.players[1].stockpileTop} size="small" />
+                            <div style={{ color: 'white', fontSize: '0.7rem', marginBottom: '4px', fontWeight: '700' }}>STOCK ({gameState.players[remotePlayerIndex]?.stockpile?.length || 0})</div>
+                            {gameState.players[remotePlayerIndex]?.stockpileTop && (
+                                <Card card={gameState.players[remotePlayerIndex].stockpileTop} size="small" />
                             )}
                         </div>
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ color: 'white', fontSize: '0.7rem', marginBottom: '4px', fontWeight: '700' }}>HAND</div>
                             <div style={{ display: 'flex', gap: '2px', maxWidth: '200px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                {gameState.players[1]?.hand.map((card, i) => (
+                                {gameState.players[remotePlayerIndex]?.hand?.map((card, i) => (
                                     <Card key={card.id || i} card={card} size="small" isFaceDown={true} />
                                 ))}
                             </div>
@@ -731,7 +794,7 @@ const Game = () => {
                         marginBottom: '1rem'
                     }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>👤 YOU</h3>
-                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Stock: {gameState.players[0]?.stockpile.length}</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Stock: {gameState.players[localPlayerIndex]?.stockpile?.length || 0}</div>
                     </div>
 
                     <div style={{
@@ -742,12 +805,12 @@ const Game = () => {
                         {/* Player Stockpile */}
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ color: 'white', fontSize: '0.75rem', marginBottom: '8px', fontWeight: '700' }}>STOCKPILE</div>
-                            {gameState.players[0]?.stockpileTop && (
+                            {gameState.players[localPlayerIndex]?.stockpileTop && (
                                 <Card
-                                    card={gameState.players[0].stockpileTop}
+                                    card={gameState.players[localPlayerIndex].stockpileTop}
                                     size="normal"
-                                    onClick={() => handleCardClick(gameState.players[0].stockpileTop, 'stockpile')}
-                                    isSelected={selectedCard?.card.id === gameState.players[0].stockpileTop.id && selectedCard.source === 'stockpile'}
+                                    onClick={() => handleCardClick(gameState.players[localPlayerIndex].stockpileTop, 'stockpile')}
+                                    isSelected={selectedCard?.card.id === gameState.players[localPlayerIndex].stockpileTop.id && selectedCard.source === 'stockpile'}
                                 />
                             )}
                         </div>
@@ -756,7 +819,7 @@ const Game = () => {
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ color: 'white', fontSize: '0.75rem', marginBottom: '8px', fontWeight: '700' }}>YOUR HAND</div>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                {gameState.players[0]?.hand.map((card, index) => (
+                                {gameState.players[localPlayerIndex]?.hand?.map((card, index) => (
                                     <Card
                                         key={card.id}
                                         card={card}
@@ -777,12 +840,12 @@ const Game = () => {
                                 fontWeight: '700'
                             }}>DISCARDS</div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                                {gameState.players[0]?.discardPiles.map((pile, index) => (
+                                {gameState.players[localPlayerIndex]?.discardPiles?.map((pile, index) => (
                                     <div
                                         key={index}
                                         onClick={() => {
                                             if (selectedCard && selectedCard.source === 'hand') handleDiscard(index);
-                                            else if (pile.length > 0) handleCardClick(pile[pile.length - 1], `discard-${index}`);
+                                            else if (pile && pile.length > 0) handleCardClick(pile[pile.length - 1], `discard-${index}`);
                                         }}
                                         style={{
                                             height: '90px',

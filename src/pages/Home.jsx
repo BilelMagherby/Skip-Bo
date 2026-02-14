@@ -64,6 +64,7 @@ const Home = () => {
         return { ...base, ...activeTheme };
     };
 
+
     const getHeroCardContent = (i) => {
         const cards = [
             { num: '10', suit: cardStyle === 'volcano' ? '🔥' : '♥' },

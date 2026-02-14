@@ -15,7 +15,7 @@ const Navbar = () => {
 
   return (
     <nav
-      class={`navbar ${isOpen ? 'mobile-menu-active' : ''}`}
+      className={`navbar ${isOpen ? 'mobile-menu-active' : ''}`}
       style={{
         background: 'var(--primary-color)',
         padding: '0.8rem 1.5rem',
